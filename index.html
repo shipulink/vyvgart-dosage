@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vyvgart IV Dose Calculator</title>
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <style>
+    /* Minimal Tailwind-like styling subset */
+    body { margin: 0; background:#0a0a0a; color:#e5e5e5; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji'; }
+    .container { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .card { width:100%; max-width:640px; }
+    .h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px 0; }
+    .muted { color:#9ca3af; font-size: 12px; margin: 0 0 16px 0; }
+    .grid { display:grid; grid-template-columns: 1fr auto auto; gap:8px; align-items:center; margin-bottom: 16px; }
+    .label { font-size: 14px; color:#d4d4d8; }
+    .btn { padding:8px 12px; border-radius:16px; background:#1f2937; border:none; color:#e5e5e5; }
+    .btn:hover { background:#374151; cursor:pointer; }
+    .input { width:112px; text-align:right; padding:8px 12px; border-radius:16px; background:#111827; border:1px solid #1f2937; color:#e5e5e5; outline:none; }
+    .input:focus { box-shadow: 0 0 0 2px #6366f1; }
+    .table { width:100%; font-size:14px; background:#111827; border:1px solid #1f2937; border-radius:16px; overflow:hidden; }
+    .tr { border-bottom:1px solid #1f2937; }
+    .tdl { font-weight:600; padding:12px; color:#e5e7eb; vertical-align: top; }
+    .tdr { padding:12px; color:#f3f4f6; vertical-align: top; }
+    .footer { margin-top:12px; color:#9ca3af; font-size:12px; line-height:1.4; }
+    .disclaimer {
+      font-size: 0.75rem;
+      color: #666;
+      text-align: center;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      border-top: 1px solid #e0e0e0;
+    }
+    .trademark {
+      display: block;
+      margin-top: 0.25rem;
+    }
+    ul { margin:6px 0 0 16px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + Babel (for quick deploy without build step) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // Constants
+    const MG_PER_KG = 10;
+    const VIAL_MG = 400;
+    const CONC_MG_PER_ML = 20;
+    const VIAL_ML = VIAL_MG / CONC_MG_PER_ML; // 20 mL
+    const MAX_DOSE_MG = 1200;
+    const NS_BAG_ML = 100;
+    const FINAL_VOL_ML = 125;
+
+    const formatMl = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
+    const formatInt = (n) => (Number.isFinite(n) ? Math.round(n).toString() : "—");
+
+    function clampKg(v) {
+      const x = Math.round(v);
+      if (!Number.isFinite(x)) return null;
+      return Math.max(1, Math.min(300, x));
+    }
+
+    function Row({ label, value }) {
+      return (
+        <tr className="tr">
+          <td className="tdl">{label}</td>
+          <td className="tdr">{value}</td>
+        </tr>
+      );
+    }
+
+    function App() {
+      const [kg, setKg] = useState(70);
+      const [input, setInput] = useState("70");
+
+      useEffect(() => {
+        const saved = localStorage.getItem("vyvgart_kg");
+        if (saved) {
+          setInput(saved);
+          setKg(clampKg(parseInt(saved, 10)));
+        }
+      }, []);
+
+      useEffect(() => {
+        if (kg !== null) {
+          localStorage.setItem("vyvgart_kg", String(kg));
+        }
+      }, [kg]);
+
+      const results = useMemo(() => {
+        if (kg === null) return null;
+
+        const doseMgRaw = kg * MG_PER_KG;
+        const doseMg = Math.min(doseMgRaw, MAX_DOSE_MG);
+        const volMl = doseMg / CONC_MG_PER_ML;
+
+        const fullVials = Math.floor(doseMg / VIAL_MG);
+        const remainderMg = doseMg % VIAL_MG;
+        const lastVialMl = remainderMg / CONC_MG_PER_ML;
+        const wasteMl = remainderMg === 0 ? 0 : VIAL_ML - lastVialMl;
+
+        const removeNsMl = Math.max(0, volMl - (FINAL_VOL_ML - NS_BAG_ML));
+
+        return { doseMg, volMl, fullVials, lastVialMl, wasteMl, removeNsMl };
+      }, [kg]);
+
+      return (
+        <div className="container">
+          <div className="card">
+            <h1 className="h1">Vyvgart IV Dose Calculator</h1>
+            <p className="muted">
+              Input: patient mass (kg). 10 mg/kg; 400 mg vials @ 20 mg/mL (20 mL); max 1200 mg; NS bag 100 mL; final volume 125 mL.
+            </p>
+
+            <div className="grid">
+              <label htmlFor="kg" className="label">Patient mass (kg)</label>
+              <div style={{gridColumn: "span 2", display:"flex", gap:"8px", justifyContent:"end"}}>
+                <button className="btn" aria-label="Decrease weight by 1 kg"
+                  onClick={() => {
+                    const newKg = clampKg((kg || 0) - 1);
+                    setKg(newKg);
+                    setInput(newKg?.toString() || "");
+                  }}>−</button>
+                <input id="kg" className="input" type="text" inputMode="numeric" pattern="[0-9]*"
+                  value={input}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // allow empty or digits only; ignore other chars
+                    if (val === "" || /^[0-9]+$/.test(val)) {
+                      setInput(val);
+                      if (val === "") setKg(null);
+                      else setKg(clampKg(parseInt(val, 10)));
+                    }
+                  }}
+                />
+                <button className="btn" aria-label="Increase weight by 1 kg"
+                  onClick={() => {
+                    const newKg = clampKg((kg || 0) + 1);
+                    setKg(newKg);
+                    setInput(newKg?.toString() || "");
+                  }}>+</button>
+              </div>
+            </div>
+
+            <table className="table">
+              <tbody>
+                <Row label="Dose" value={results ? `${formatInt(results.doseMg)} mg` : "—"} />
+                <Row label="Volume (Vyvgart)" value={results ? `${formatMl(results.volMl)} mL` : "—"} />
+                <Row label="Full 400 mg vials" value={results ? formatInt(results.fullVials) : "—"} />
+                <Row label="From last vial" value={results ? `${formatMl(results.lastVialMl)} mL` : "—"} />
+                <Row label="Waste from last vial" value={results ? `${formatMl(results.wasteMl)} mL` : "—"} />
+                <Row label="Remove NS before adding" value={results ? `${formatMl(results.removeNsMl)} mL` : "—"} />
+              </tbody>
+            </table>
+
+            <div className="footer">
+              <p>Notes:</p>
+              <ul>
+                <li>Dose capped at 1200 mg (3 vials). Volume computed at 20 mg/mL.</li>
+                <li>“From last vial” is 0 when dose is a multiple of 400 mg; waste then also 0.</li>
+                <li>Remove NS: max(0, Vyvgart mL − 25). Start NS = 100 mL; final = 125 mL.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <footer class="disclaimer">
+  Not medical advice. Use at your own risk. 
+          <span class="trademark">VYVGART is a registered trademark of argenx; no affiliation.</span>
+        </footer>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</body>
+</html>
