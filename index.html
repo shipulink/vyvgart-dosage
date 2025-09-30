@@ -9,8 +9,10 @@
   <link rel="icon" href="/icons/icon-192.png" />
   <style>
     /* Minimal Tailwind-like styling subset */
-    body { margin: 0; background:#0a0a0a; color:#e5e5e5; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji'; }
-    .container { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    html, body, #root { height: 100%; }
+    body { margin: 0; background:#0a0a0a; color:#e5e5e5; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji'; overflow:hidden; }
+    .container { height:100%; display:flex; flex-direction:column; }
+    .center { flex:1 1 auto; display:flex; align-items:center; justify-content:center; padding:24px; }
     .card { width:100%; max-width:640px; }
     .h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px 0; }
     .muted { color:#9ca3af; font-size: 12px; margin: 0 0 16px 0; }
@@ -24,24 +26,28 @@
     .tr { border-bottom:1px solid #1f2937; }
     .tdl { font-weight:600; padding:12px; color:#e5e7eb; vertical-align: top; }
     .tdr { padding:12px; color:#f3f4f6; vertical-align: top; }
-    .footer { margin-top:12px; color:#9ca3af; font-size:12px; line-height:1.4; }
-    .disclaimer {
-      font-size: 0.75rem;
+    .footer { padding:10px 16px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #1f2937; }
+    .notes {
+      font-size: 0.85rem;
       color: #666;
-      text-align: center;
-      padding: 0.5rem;
-      margin-top: 1rem;
-      border-top: 1px solid #e0e0e0;
+      text-align: left;
+      margin: 1em 0 0 0;
+      padding-left: 0.5em;
+      list-style-position: inside;
+      line-height: 1.4;
     }
-    .trademark {
-      display: block;
-      margin-top: 0.25rem;
+    .notes li {
+      margin-bottom: 0.3em;
+      font-weight: 400;
     }
-    ul { margin:6px 0 0 16px; }
+    ul {
+      margin:6px 0 0 0;
+      padding-inline-start: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root" class="container"></div>
 
   <!-- React + Babel (for quick deploy without build step) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -115,67 +121,69 @@
 
       return (
         <div className="container">
-          <div className="card">
-            <h1 className="h1">Vyvgart IV Dose Calculator</h1>
-            <p className="muted">
-              Input: patient mass (kg). 10 mg/kg; 400 mg vials @ 20 mg/mL (20 mL); max 1200 mg; NS bag 100 mL; final volume 125 mL.
-            </p>
+          <div className="center">
+            <div className="card">
+              <h1 className="h1">Vyvgart IV Dose Calculator</h1>
+              <p className="muted">
+                Input: patient mass (kg). 10 mg/kg; 400 mg vials @ 20 mg/mL (20 mL); max 1200 mg; NS bag 100 mL; final volume 125 mL.
+              </p>
 
-            <div className="grid">
-              <label htmlFor="kg" className="label">Patient mass (kg)</label>
-              <div style={{gridColumn: "span 2", display:"flex", gap:"8px", justifyContent:"end"}}>
-                <button className="btn" aria-label="Decrease weight by 1 kg"
-                  onClick={() => {
-                    const newKg = clampKg((kg || 0) - 1);
-                    setKg(newKg);
-                    setInput(newKg?.toString() || "");
-                  }}>−</button>
-                <input id="kg" className="input" type="text" inputMode="numeric" pattern="[0-9]*"
-                  value={input}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    // allow empty or digits only; ignore other chars
-                    if (val === "" || /^[0-9]+$/.test(val)) {
-                      setInput(val);
-                      if (val === "") setKg(null);
-                      else setKg(clampKg(parseInt(val, 10)));
-                    }
-                  }}
-                />
-                <button className="btn" aria-label="Increase weight by 1 kg"
-                  onClick={() => {
-                    const newKg = clampKg((kg || 0) + 1);
-                    setKg(newKg);
-                    setInput(newKg?.toString() || "");
-                  }}>+</button>
+              <div className="grid">
+                <label htmlFor="kg" className="label">Patient mass (kg)</label>
+                <div style={{gridColumn: "span 2", display:"flex", gap:8, justifyContent:"end"}}>
+                  <button className="btn" aria-label="Decrease weight by 1 kg"
+                    onClick={() => {
+                      const newKg = clampKg((kg || 0) - 1);
+                      setKg(newKg);
+                      setInput(newKg?.toString() || "");
+                    }}>−</button>
+                  <input id="kg" className="input" type="text" inputMode="numeric" pattern="[0-9]*"
+                    value={input}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || /^[0-9]+$/.test(val)) {
+                        setInput(val);
+                        if (val === "") setKg(null);
+                        else setKg(clampKg(parseInt(val, 10)));
+                      }
+                    }}
+                  />
+                  <button className="btn" aria-label="Increase weight by 1 kg"
+                    onClick={() => {
+                      const newKg = clampKg((kg || 0) + 1);
+                      setKg(newKg);
+                      setInput(newKg?.toString() || "");
+                    }}>+</button>
+                </div>
+              </div>
+
+              <table className="table">
+                <tbody>
+                  <Row label="Dose" value={results ? `${formatInt(results.doseMg)} mg` : "—"} />
+                  <Row label="Volume (Vyvgart)" value={results ? `${formatMl(results.volMl)} mL` : "—"} />
+                  <Row label="Full 400 mg vials" value={results ? formatInt(results.fullVials) : "—"} />
+                  <Row label="From last vial" value={results ? `${formatMl(results.lastVialMl)} mL` : "—"} />
+                  <Row label="Waste from last vial" value={results ? `${formatMl(results.wasteMl)} mL` : "—"} />
+                  <Row label="Remove NS before adding" value={results ? `${formatMl(results.removeNsMl)} mL` : "—"} />
+                </tbody>
+              </table>
+
+              <div className="notes">
+                <p>Notes:</p>
+                <ul>
+                  <li>Dose capped at 1200 mg (3 vials). Volume computed at 20 mg/mL.</li>
+                  <li>“From last vial” is 0 when dose is a multiple of 400 mg; waste then also 0.</li>
+                  <li>Remove NS: max(0, VYVGART mL − 25). Start NS = 100 mL; final = 125 mL.</li>
+                </ul>
               </div>
             </div>
+          </div>
 
-            <table className="table">
-              <tbody>
-                <Row label="Dose" value={results ? `${formatInt(results.doseMg)} mg` : "—"} />
-                <Row label="Volume (Vyvgart)" value={results ? `${formatMl(results.volMl)} mL` : "—"} />
-                <Row label="Full 400 mg vials" value={results ? formatInt(results.fullVials) : "—"} />
-                <Row label="From last vial" value={results ? `${formatMl(results.lastVialMl)} mL` : "—"} />
-                <Row label="Waste from last vial" value={results ? `${formatMl(results.wasteMl)} mL` : "—"} />
-                <Row label="Remove NS before adding" value={results ? `${formatMl(results.removeNsMl)} mL` : "—"} />
-              </tbody>
-            </table>
-
-            <div className="footer">
-              <p>Notes:</p>
-              <ul>
-                <li>Dose capped at 1200 mg (3 vials). Volume computed at 20 mg/mL.</li>
-                <li>“From last vial” is 0 when dose is a multiple of 400 mg; waste then also 0.</li>
-                <li>Remove NS: max(0, Vyvgart mL − 25). Start NS = 100 mL; final = 125 mL.</li>
-              </ul>
-            </div>
+          <div className="footer" aria-hidden="true">
+            Not medical advice. Use at your own risk.<br/>
+            VYVGART is a registered trademark of argenx; no affiliation.
           </div>
         </div>
-        <footer class="disclaimer">
-  Not medical advice. Use at your own risk. 
-          <span class="trademark">VYVGART is a registered trademark of argenx; no affiliation.</span>
-        </footer>
       );
     }
 
