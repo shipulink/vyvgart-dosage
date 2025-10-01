@@ -85,23 +85,8 @@
     }
 
     function App() {
-      const [kg, setKg] = useState(70);
-      const [input, setInput] = useState("70");
-
-      useEffect(() => {
-        const saved = localStorage.getItem("vyvgart_kg");
-        if (saved) {
-          setInput(saved);
-          setKg(clampKg(parseInt(saved, 10)));
-        }
-      }, []);
-
-      useEffect(() => {
-        if (kg !== null) {
-          localStorage.setItem("vyvgart_kg", String(kg));
-        }
-      }, [kg]);
-
+      const [kg, setKg] = useState(null);
+      const [input, setInput] = useState("");
       const results = useMemo(() => {
         if (kg === null) return null;
 
@@ -110,20 +95,22 @@
         const volMl = doseMg / CONC_MG_PER_ML;
 
         const fullVials = Math.floor(doseMg / VIAL_MG);
+        const vials = Math.ceil(doseMg / VIAL_MG);
         const remainderMg = doseMg % VIAL_MG;
         const lastVialMl = remainderMg / CONC_MG_PER_ML;
         const wasteMl = remainderMg === 0 ? 0 : VIAL_ML - lastVialMl;
+        const wasteMg = remainderMg === 0 ? 0 : VIAL_MG - remainderMg;
 
         const removeNsMl = Math.max(0, volMl - (FINAL_VOL_ML - NS_BAG_ML));
 
-        return { doseMg, volMl, fullVials, lastVialMl, wasteMl, removeNsMl };
+        return { doseMg, volMl, fullVials, vials, lastVialMl, wasteMl, wasteMg, removeNsMl };
       }, [kg]);
 
       return (
         <div className="container">
           <div className="center">
             <div className="card">
-              <h1 className="h1">Vyvgart IV Dose Calculator</h1>
+              <h1 className="h1">VYVGART IV Dose Calculator</h1>
               <p className="muted">
                 Input: patient mass (kg). 10 mg/kg; 400 mg vials @ 20 mg/mL (20 mL); max 1200 mg; NS bag 100 mL; final volume 125 mL.
               </p>
@@ -131,12 +118,6 @@
               <div className="grid">
                 <label htmlFor="kg" className="label">Patient mass (kg)</label>
                 <div style={{gridColumn: "span 2", display:"flex", gap:8, justifyContent:"end"}}>
-                  <button className="btn" aria-label="Decrease weight by 1 kg"
-                    onClick={() => {
-                      const newKg = clampKg((kg || 0) - 1);
-                      setKg(newKg);
-                      setInput(newKg?.toString() || "");
-                    }}>−</button>
                   <input id="kg" className="input" type="text" inputMode="numeric" pattern="[0-9]*"
                     value={input}
                     onChange={(e) => {
@@ -150,21 +131,20 @@
                   />
                   <button className="btn" aria-label="Increase weight by 1 kg"
                     onClick={() => {
-                      const newKg = clampKg((kg || 0) + 1);
-                      setKg(newKg);
-                      setInput(newKg?.toString() || "");
-                    }}>+</button>
+                      setKg(null)
+                      setInput("");
+                    }}>clear</button>
                 </div>
               </div>
 
               <table className="table">
                 <tbody>
-                  <Row label="Dose" value={results ? `${formatInt(results.doseMg)} mg` : "—"} />
-                  <Row label="Volume (Vyvgart)" value={results ? `${formatMl(results.volMl)} mL` : "—"} />
-                  <Row label="Full 400 mg vials" value={results ? formatInt(results.fullVials) : "—"} />
-                  <Row label="From last vial" value={results ? `${formatMl(results.lastVialMl)} mL` : "—"} />
-                  <Row label="Waste from last vial" value={results ? `${formatMl(results.wasteMl)} mL` : "—"} />
-                  <Row label="Remove NS before adding" value={results ? `${formatMl(results.removeNsMl)} mL` : "—"} />
+                  <Row label="VYVGART dose" value={results ? `${formatInt(results.doseMg)} mg` : "—"} />
+                  <Row label="VYVGART volume" value={results ? `${formatMl(results.volMl)} mL` : "—"} />
+                  <Row label="vials" value={results ? formatInt(results.vials) : "—"} />
+                  <Row label="volume from last vial" value={results && results.lastVialMl !== 0 ? `${formatMl(results.lastVialMl)} mL` : "—"} />
+                  <Row label="waste" value={results ? `${formatMl(results.wasteMg)} mg` : "—"} />
+                  <Row label="NS to remove" value={results ? `${formatMl(results.removeNsMl)} mL` : "—"} />
                 </tbody>
               </table>
 
