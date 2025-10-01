@@ -26,6 +26,23 @@
     .tdl { font-weight:600; padding:12px; color:#e5e7eb; vertical-align: top; }
     .tdr { padding:12px; color:#f3f4f6; vertical-align: top; }
     .footer { padding:10px 16px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #1f2937; }
+    .notes {
+      font-size: 0.85rem;
+      color: #666;
+      text-align: left;
+      margin: 1em 0 0 0;
+      padding-left: 0.5em;
+      list-style-position: inside;
+      line-height: 1.4;
+    }
+    .notes li {
+      margin-bottom: 0.3em;
+      font-weight: 400;
+    }
+    ul {
+      margin:6px 0 0 0;
+      padding-inline-start: 0;
+    }
   </style>
 </head>
 <body>
@@ -127,6 +144,15 @@
                   <Row label="NS to remove" value={results ? `${formatMl(results.removeNsMl)} mL` : "—"} />
                 </tbody>
               </table>
+              <div className="notes">
+                <ul>
+                  <li>Dosage: 10 mg/kg</li>
+                  <li>400 mg vials @ 20 mg/mL (20 mL)</li>                  
+                  <li>Dose capped at 1200 mg (3 vials)</li>
+                  <li>Start NS = 100 mL</li>
+                  <li>Final NS = 125 mL</li>
+                </ul>
+              </div>
             </div>
           </div>
 
