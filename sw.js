@@ -1,13 +1,14 @@
-const CACHE_NAME = 'vyvgart-cache-v1';
-const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-];
+const CACHE_NAME = 'vyvgart-cache-v2';
 
 self.addEventListener('install', (e) => {
+  const base = self.registration.scope;
+  const APP_SHELL = [
+    base,
+    base + 'index.html',
+    base + 'manifest.webmanifest',
+    base + 'icons/icon-192.png',
+    base + 'icons/icon-512.png',
+  ];
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)));
   self.skipWaiting();
 });
